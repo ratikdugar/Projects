@@ -1,0 +1,223 @@
+--- 
+author: "Ratik Dugar"
+title: "Stroop Effect"
+output: html_document
+---
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+library(ggplot2)
+library(knitr)
+library(gridExtra)
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+getwd()
+setwd("C:/Users/rdugar/Desktop/udacity/stats")
+stroop<-read.csv('stroopdata.csv')
+```
+
+In a Stroop task, participants are presented with a list of words, with each
+word displayed in a color of ink. The participant's task is to say out loud the
+color of the ink in which the word is printed. The task has two conditions: a 
+congruent words condition, and an incongruent words condition. In the congruent
+words condition, the words being displayed are color words whose names match the
+colors in which they are printed. In the incongruent words condition, the words 
+displayed are color words whose names do not match the colors in which they are 
+printed. In each case, we measure the time it takes to name the ink colors in 
+equally-sized lists. Each participant will go through and record a time from 
+each condition.
+
+#Investigation
+
+### 1. What is our independent variable? What is our dependent variable?
+
+**Independent Variable:** The word/color congruency status. This is the variable
+that forms the basis of our 2 groups- Congruent and Incongruent.
+
+**Dependent Variable:** The time taken by a participant to go through and name 
+all the ink colors in 2 equally sized lists.
+
+### 2. What is an appropriate set of hypotheses for this task? What kind of \
+statistical test do you expect to perform? Justify your choices.
+
+From looking at the data we can see that time taken by partcipants to name
+incongruent words/colors is more than that of the congruent list. Keeping that 
+in mind, my **Null Hypothesis**($H_{0}$) would be that the time taken to name 
+the Incongruent list of words would decrease or remain unchanged when compared 
+to the time taken to name the congruent list of words. 
+My **Alternate Hypothesis**($H_{a}$) would be that the time taken to name the
+Incongruent list of words would be more than of the congruent list of words.
+
+$H_{0}$: $\mu_{i}$ $\le$ $\mu_{c}$ 
+$H_{a}$: $\mu_{i}$ $\gt$ $\mu_{c}$
+
+where, 
+$\mu_{i}$ population mean of incongruent time values while 
+$\mu_{c}$ is the population mean of congruent time values)
+
+**Statistical Test:**
+
+In order to test the hypotheses I declared above, I would use the following:
+
+**One Tailed Dependent Samples t-test** at a
+
+**95% Confidence level**($\alpha$ = 0.05)
+
+I am using a t-test because we dont know the population standard deviation and 
+our sample size is less than 30 and therefore, we cannot use the z-test. 
+It is a paired t test because each participant is tested twice -
+once for the congruent list of color names and then for an equally sized 
+list of incongruent color names. This t-test is going to be one tailed because
+of our one directional alternative assumption that the time taken to name the 
+incongruent set is more than the time taken to name the congruent set.
+
+### 3. Report some descriptive statistics regarding this dataset. Include at \
+least one measure of central tendency and at least one measure of variability.
+
+```{r stroop Descriptive_statistics}
+stroop$Diff<-stroop$Incongruent-stroop$Congruent
+summary(stroop)
+sd_congruent<-sd(stroop$Congruent)
+sd_incongruent<-sd(stroop$Incongruent)
+sd_diff<-sd(stroop$Diff)
+sd_congruent
+sd_incongruent
+sd_diff
+```
+
+From the summary statistics we generate above,
+
+**Mean:**
+
+for Congruent($\bar{x}_{1}$)=14.05, 
+for Incongruent($\bar{x}_{2}$)=22.02
+
+**Median:**
+for Congruent=14.36, 
+for Incongruent :21.02 
+
+The median is a better measure of central tendancy in this case because from 
+the frequency distribution, it looks the like the data does not follow a 
+normal distribution and might be a little skewed.
+
+The **sample standard deviation(s)** = $\sum{(x - \bar{x})^2}/n-1$
+for Congruent=3.56,
+for Incongruent=4.80
+
+**Interquartile Range(Q3-Q1):**
+for Congruent=4.3,
+for Incongruent=5.33
+
+### 4. Provide one or two visualizations that show the distribution of the \
+sample data. Write one or two sentences noting what you observe about the plot \
+or plots.
+
+```{r Congruent, echo=FALSE }
+p1<-ggplot(aes(x=Congruent),data=stroop)+geom_histogram(binwidth=2)+
+  scale_x_continuous(breaks=seq(8,24,2))
+p2<-ggplot(aes(x=Incongruent),data=stroop)+geom_histogram(binwidth=2)+
+  scale_x_continuous(breaks=seq(14,36,2))
+grid.arrange(p1,p2,ncol=2)
+```
+
+From the above plots we can see the frequency distribution of both the groups.
+The mean and median time for the congruent set both look like they would be 
+around 14 while for the Incongruent set it looks like it should be around 21-22.
+This is confirmed above through the summary statistics. The congruent histogram 
+distribution looks more normal and than the incongruent but both seem to be 
+slightly skewed to the right. The median for the incongruent set is slightly 
+less than the mean, again showing the effect of positive skewness. 
+Interestingly,there are no time values between 27 and 33 for the Incongruent 
+set.
+
+```{r Scatter, echo=FALSE }
+ggplot(aes(x=Incongruent,y=Congruent),data=stroop)+geom_point()
+```
+
+```{r stroop_correlation }
+with(stroop,cor.test(Congruent,Incongruent,prob=0.99,method='pearson'))
+```
+
+The scatterplot between the congruent and incongruent timings show that there
+is a positive correlation although it might not be very strong based on the 
+fairly dispursed plotting. I calculated the coefficient of correlation between 
+timings of the 2 groups and indeed, it turned out to be 0.35. I can also see 
+that there are 2 outliers with very high incongruent timings and these are the 
+reason why we saw a gap between the values of 27 and 33 earlier on.
+
+### 5. Now, perform the statistical test and report your results. What is your \
+confidence level and your critical statistic value? Do you reject the null \
+hypothesis or fail to reject it? Come to a conclusion in terms of the \
+experiment task. Did the results match up with your expectations?
+
+In order to perform the statistical test, we first need to calculate the 
+difference between the congruent and incongruent timings for each participant
+which we did above. From the summary above, we know that the **mean difference**
+($\bar{x}_{2}$-$\bar{x}_{1}$)=7.965. We also calculated the 
+**standard deviation**($s_{diff}$) for the difference above and it turned out 
+to be 4.86.
+
+Using the one-tailed t-test,
+
+$\alpha$=0.05
+
+**sample size(n)**=24
+
+**degrees of freedom(df)**=n-1=23
+
+Using the t-table I found that the $t_{critical}$=1.714
+
+**Standard Error of the difference:**
+
+($SE_{D}$)=($s_{diff}$)/($\sqrt{n}$)=4.86/$\sqrt{24}$=0.993
+
+$t_{statistic}$=Mean difference/$SE_{D}$=7.965/0.993=8.02
+
+The t-statistic value is in the critical region and greater than the t-critical
+value so we can say that our result is statistically significant at an $\alpha$
+level of 0.05 with degrees of freedom=23
+
+Using the t-distribution table I conclude that the 
+p-value<0.0001 therefore, the result is statistically significant as the 
+p-value<$\alpha$=0.05
+
+Thus, we *reject the null hypothesis*($H_{0}$) and conclude that the incongruent
+list of words/colors does indeed have a greater time response than the congruent
+list of words/colors.
+
+This result in line with our expectation.
+
+**The 95% Confidence Interval:** 
+
+$t_{critical}$=2.069 for two-tailed t-distribution at $\alpha$=0.05
+
+CI: Mean difference $\pm$ $t_{critical}$$*$$SE_{D}$=7.965 $\pm$ 2.069$*$.993=
+(5.91,10.02)
+
+### 6.Optional: What do you think is responsible for the effects observed? Can \
+you think of an alternative or similar task that would result in a similar \
+effect? Some research about the problem will be helpful for thinking about \
+these two questions!
+
+I think that the delay in reaction is caused by parallel distributed 
+processing. The theory believes that the brain analyzes information and in doing
+so, it creates different and specific pathways for different tasks. A task like
+reading has a stronger pathway than recognizing colors and when both of these
+tasks are activated at the same time, the stronger pathway acts as an 
+interference when we are expecting a response from the weaker pathway. This is 
+what causes the delayed reaction. I don't think humans are slower at processing
+color and this could be quantified by timing a list of just colors that turn up
+on the screen. I suspect our reaction in that case would be about the same when 
+compared to naming words that show up. 
+An experiment that brings out a similar Stroop effect is recognizing geometric 
+shapes with their corresponding names versus geometric shapes with mismatched 
+names. 
+
+# References
+
+https://en.wikipedia.org/wiki/Stroop_effect
+
+http://www.statpower.net/Content/310/R%20Stuff/SampleMarkdown.html
+
+http://pages.stat.wisc.edu/~jgillett/327-1/RMarkdown.pdf
