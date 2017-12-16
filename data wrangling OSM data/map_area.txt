@@ -1,0 +1,6 @@
+ OPENSTREETMAP DATA PROJECT
+Map Area
+San Francisco, CA
+https://mapzen.com/data/metro-extracts/metro/san-francisco_california/
+https://www.openstreetmap.org/relation/111968
+I used the San Francisco metro data from mapzen which includes some of the surrounding cities and towns, such as Redwood City, San Mateo, Oakland, etc. I currently live in Oakland and have lived in the bay area for the past 2-3 years and this was a way for me to not only get to know this place better, find useful and interesting things about the area but also help make the data from this area a little cleaner. 
