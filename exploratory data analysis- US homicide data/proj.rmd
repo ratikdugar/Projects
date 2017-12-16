@@ -1,0 +1,1069 @@
+US HOMICIDE EDA REPORT by Ratik Dugar
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+
+library(ggplot2)
+library(knitr)
+library(dplyr)
+library(gridExtra)
+library('RColorBrewer')
+library(tidyr)
+```
+
+```{r echo=FALSE, Load_the_Data}
+# Load the Data
+getwd()
+ushomi<-read.csv('homicide.csv')
+```
+
+>This dataset comes from Kaggle.
+[https://www.kaggle.com/murderaccountability/homicide-reports] 
+The Murder Accountability Project is the most complete database of homicides 
+in the United States currently available. This dataset includes murders from the
+FBI's Supplementary Homicide Report from 1980 to 2014 and Freedom of Information
+Act data on more than 22,000 homicides that were not reported to the Justice 
+Department. This dataset includes the age, race, sex, ethnicity of victims and 
+perpetrators, in addition to the relationship between the victim and perpetrator
+and weapon used.
+
+# Univariate Plots Section
+
+The following will show the structure of the dataset.
+
+```{r echo=FALSE, Structure}
+str(ushomi)
+```
+
+From the above output, we can see that there are 638,454 observations 
+from 24 variables.
+
+Below are the first 10 observations from the dataset.
+
+```{r echo=FALSE, Head}
+head(ushomi,10)
+```
+
+All the variable names are pretty self explanatory.
+
+```{r echo=FALSE, Summary}
+summary(ushomi)
+```
+
+The above summary shows the counts for each variable and now we are going to 
+visually show some of them on plots. 
+
+Before we graph some univariate plots I am going to clean some of the variable
+entries to make them have more consistency and remove as much inaccurate data
+as we can.
+
+```{r echo=FALSE, warning=FALSE, Cleaning}
+ushomi$State<-substring(ushomi$Agency.Code,1,2)
+ushomi$Victim.Age<-ifelse(ushomi$Victim.Age==998,'NA',
+                          as.numeric(ushomi$Victim.Age))
+ushomi$Perpetrator.Age<-ifelse((ushomi$Crime.Solved=='No'
+                               & ushomi$Perpetrator.Age==0),'NA',
+                               as.numeric(ushomi$Perpetrator.Age))
+ushomi$Weapon<-ifelse(ushomi$Weapon=='Gun'|ushomi$Weapon=='Handgun'|
+                        ushomi$Weapon=='Firearm'|ushomi$Weapon=='Shotgun'|
+                        ushomi$Weapon=='Rifle','Gun/Firearm',
+                      as.character(ushomi$Weapon))
+ushomi$totalvictims<-ushomi$Victim.Count+1
+```
+
+I changed the state name to have the abbreviated state name code, changed
+victim ages that were 998 to 'NA', changed Perpetrator age of unsolved crimes 
+from 0 to 'NA' and finally grouped gun,handgun,firearm,shotgun,rifle as 
+'Guns/Firearm'
+
+Below is the histogram showing homicide counts from each state.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_1}
+ggplot(aes(x=State),data=ushomi)+
+  geom_histogram(stat='count',binwidth=1)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+We can see that California, Texas and New York have the highest homicide counts.
+This is no surprise as these are the most populated states in the US.
+
+The histogram below shows the crime case counts handled by each Agency type.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_2}
+ggplot(aes(x=Agency.Type),data=ushomi)+geom_histogram(stat='count')
+```
+
+Most homicide cases are under the Municipal Police followed by the Sheriff's
+department.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_3}
+ggplot(aes(x=Month),data=ushomi)+geom_histogram(stat='count')
+```
+
+The distribution above is pretty uniform. February has a lower count than the
+other months and that's because of the 28 day month. 
+
+The plot below shows the frequency polygon of homicide ounts by each year.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_4}
+ggplot(aes(x=Year),data=ushomi)+geom_freqpoly(stat='count')
+```
+
+There have been frequent up and downs in the homicide count since the 80s but 
+overall, therein is a decreasing trend here. The frequency of homicides has 
+fallen down dramatically since the early 90s. 
+
+The plot below shows the count distribution between 'manslaughter by negligence' 
+and 'murder or manslaughter'
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_5}
+ggplot(aes(x=Crime.Type),data=ushomi)+
+  geom_histogram(stat='count')
+```
+
+Most homicides were of the murder or manslaughter type.
+
+The plot below shows a histogram representing the counts between crimes that've
+been solved vs crimes that are still unsolved.
+
+```{r echo=FALSE, warning=FALSE,Univariate_Plot_6}
+ggplot(aes(x=Crime.Solved),data=ushomi)+
+  geom_histogram(stat='count')
+```
+
+Looks like about two-thirds of the homicide crimes were solved.
+
+Below is a histogram ditribution of the victims by sex.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_7}
+ggplot(aes(x=Victim.Sex),data=ushomi)+geom_histogram(stat='count')
+```
+
+Majority of the victims are male, a little less than 500,000 and there are 
+less than 150,000 female victims. It also looks like there have been some cases
+where the victim sex wasn't or couldn't be identified.
+
+The histogram below shows the age distribution of all the victims. 
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_8}
+ggplot(aes(x=as.factor(Victim.Age)),data=ushomi)+
+  geom_histogram(stat='count',binwidth=1)+
+  scale_x_discrete(breaks=seq(0,100,5))
+```
+
+The distribution shows that majority of the victims were between their late
+teens and their mid 30s. We can also see a high spikes at the age of 99 with 
+about 9000 victims of that age. I suspect this has been inaccurately recorded.
+There is a similar spike at 0, possibly for the same reason.This plot excludes
+974 entries where the age was '998' but was later assigned 'NA'.
+
+The histogram shows all victims by race.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_9}
+ggplot(aes(x=Victim.Race),data=ushomi)+geom_histogram(stat='count')
+```
+
+Like expected, majority of the victims were white or black because they make up
+a big majority of the American population.
+
+The plot below shows perpetrators grouped by sex via the histogram.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_10}
+ggplot(aes(x=Perpetrator.Sex),data=ushomi)+geom_histogram(stat='count')
+```
+
+From the histogram we can see that there are a lot more male perpetrators
+than female. There is a pretty high number of unknown criminals from cases that
+are still unsolved.
+
+Below is the histogram showing the age distribution of the perpetrators.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_11}
+ggplot(aes(x=as.factor(Perpetrator.Age)),data=ushomi)+ geom_histogram(stat='count',binwidth=1)+ scale_x_discrete(breaks=seq(0,100,5))+
+  scale_y_continuous(limits=c(0,50000))
+```
+
+Even after cleaning perpetrators' ages from 0 to 'NA' for unsolved crimes, we 
+see that there is an unusually high count of perpetrators with the ages of 0. 
+It doesn't make sense for about 27000 babies to be murderers so I conclude that 
+some of the entries are unreliable when it comes to age. May be perpetrators for
+whom the age could never be confirmed were left at 0 and/or someone didn't care
+to change that once it was known.
+
+The univariate plot below shows the perpetrators recorded by race.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_12}
+ggplot(aes(x=Perpetrator.Race),data=ushomi)+geom_histogram(stat='count')
+```
+
+Black and white people make up most of the perpetrators as they also make up 
+a majority of the population.
+
+The graph below shows the distribution of the different relationships of the 
+victim to the perpetrator.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_13}
+ggplot(aes(x=Relationship),data=ushomi)+geom_histogram(stat='count')+
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+Of the crimes that were solved, acquaintances, strangers, wives and friends were
+some of the highest victim relationships. It is important to note here that from
+looking at the dataset a little more carefully, one can see that there is 
+inconsistency when it comes to the relationship and the sex of the victim or the
+relationship and the age of the victim. For example, some 0 or 1yr old victims 
+show up as mothers or wives. I believe in some cases, the relationship of the 
+perpetrator to the victim was recorded instead of the other way round.'
+
+There is a graphic representaion below of the weapons that were usually used for 
+the crimes.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_14}
+ggplot(aes(x=Weapon),data=ushomi)+geom_histogram(stat='count')+
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+'Gun/Firearm', 'Knife' and 'Blunt object' make up the majority of the weapons 
+used amongst all the cases. 
+
+There is a histogram below showing the frequency of perpetrators by sex.
+
+```{r echo=FALSE, warning=FALSE, Univariate_Plot_15}
+ggplot(aes(x=Perpetrator.Sex),data=ushomi)+geom_histogram(stat='count')
+```
+
+Clearly, a majority of the perpetrators are male. About 8 times as many as 
+female criminals. There are about 400,000 male and 50,000 female perpetrators.
+
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+
+The dataset has 638454 observations from 24 variables. The variables are 
+shown below.
+
+Record.ID - A unique row number
+Agency.Code 
+Agency.Name
+Agency.Type - (e.g., county police, sheriff)
+City 
+State - 50 states and DC
+Year - 1980-2014
+Month - January-December
+Incident - Counting the incidents in an area per month
+Crime.Type - Murder or Manslaughter or Manslaughter by Negligence
+Crime.Solved - Yes or No
+Victim.Sex - Female, Male, or Unknown
+Victim.Age - 0-99 or 998(Fixed 998 to NA)
+Victim.Race - eg.(White, Black, Asian/Pacific Islander,etc.)
+Victim.Ethnicity - Hispanic, Not Hispanic or Unknown
+Perpetrator.Sex - Female, Male, or Unknown
+Perpetrator.Age - 0-99(Fixed unsolved cases with Perpetrator age=0 to NA)
+Perpetrator.Race - (eg.White, Black, Asian/Pacific Islander,etc)
+Perpetrator.Ethnicity - Hispanic, Not Hispanic or Unknown
+Relationship - Relationship of the victim to the perpetrator
+(Inconsistent sometimes)
+Weapon - Weapon used
+Victim.Count - Number of victims in addition to the one described
+Perpetrator.Count - Number of perpetrators in addition to the one described
+Record.Source - FBI or FOIA (Freedom of Information Act)
+
+The homicide cases are distributed pretty uniformly by month but have decreased 
+in count over time, especialy, dramatically after the early 90s.
+Majority of the victims and perpetrators are male. The distribution of age among 
+the victims and the perpetrators are very similar with majority of them being 
+between their late teens and early 30s. As you age, the counts go down. 
+The most common weapons were handguns, knives and blunt objects. I would like to
+note here that firearm,shotgun,gun and rifle are their own catgeories so it 
+would make sense to group them together. Among the races,most victims and 
+perpetrators are black or whiteand both races are pretty equally distributed. 
+This makes sense as well because they make up majority of the population. 
+Most crimes are murder or manslaughter compared to manslaughter by negligence 
+and about two-thirds of the crimes have been solved. Most homicide crimes were 
+committed in California,Texas and New York and this wasn't surprising as they 
+are the most poulated states.Relationship of the victim to the perpetrator is an
+interesting variable and we see the victim counts are for Acquaintence,
+Stranger, Wife and Friend. I would like to note here that sometimes this 
+variable is inconsistent and records the relationship of the perpetrator to the 
+victim instead of the other way round. Most cases were under the Municipal
+Police or the Sheriff.
+
+### What is/are the main feature(s) of interest in your dataset?
+
+The main feature of interest for me is the Solved status of the crime. I would
+like to see if other features such as weapon, state, race, victim identification
+affect the solved rate.
+
+### What other features in the dataset do you think will help support your \
+investigation into your feature(s) of interest?
+
+I would like to see if Victim Race, Victim Sex, Victim Age, Weapon, State, 
+Agency, Year, Victim Count and Perpetrator count affect the proportion of cases
+solved.
+
+### Did you create any new variables from existing variables in the dataset?
+
+I created a variable called totalvictims which basically adds 1 to the
+Victim.Count. I will also be creating a few new datasets below by grouping such 
+that I can have a new variable which records the proportion of cases solved 
+within that group.
+
+### Of the features you investigated, were there any unusual distributions? \
+Did you perform any operations on the data to tidy, adjust, or change the form \
+of the data? If so, why did you do this?
+
+We had a few interesting data points, for example, lot of victims recorded as 0,
+99 or 998 years of age. I changed the '998' to 'NA' but had no way to tell if
+victims recorded as 99 years old were correct or not. Similarly, we had lot of
+perpetrators as 0 years of age. In this case, some of the unsolved cases 
+were recorded as 0. I changed it to NA as well. Despite that the counts were 
+pretty high, leading me to suspect that lot of the entries are not accurate when
+it comes to age. I also grouped gun, firearm, shotgun, rifle and handgun under 
+'Gun/Firearm' such as to have a better understanding of the weapon used.
+
+
+# Bivariate Plots Section
+
+Below I group the crime cases by the different States and then record how many
+were solved and how many were not, consequently using those to calculate and 
+record the proportion of the cases solved in each state.
+
+```{r echo=TRUE, warning=FALSE, new_dataset_1}
+homi_by_state <- ushomi %>%
+group_by(State) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I group the crime cases by the different Years and then record how many
+were solved and how many were not, consequently using those to calculate and 
+record the proportion of the cases solved in each Year.
+
+```{r echo=TRUE, warning=FALSE, new_dataset_2}
+homi_by_Year <- ushomi %>%
+group_by(Year) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I group the crime cases by Victim sex and then record how many
+were solved and how many were not, consequently using those to calculate and 
+record the proportion of the cases solved by each Sex.
+
+```{r echo=TRUE, warning=FALSE,new_dataset_3}
+homi_by_Victimsex <- ushomi %>%
+group_by(Victim.Sex) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I group the crime cases by the Agency working on it and then record how many
+were solved and how many were not, consequently using those to calculate and 
+record the proportion of the cases solved by each Agency.
+
+```{r echo=TRUE, warning=FALSE,new_dataset_4}
+homi_by_Agency <- ushomi %>%
+group_by(Agency.Type) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I group the crime cases by Victim ages and then record how many
+were solved and how many were not, consequently using those to calculate and 
+record the proportion of the cases solved for each age.
+
+```{r echo=TRUE, warning=FALSE, new_dataset_5}
+homi_by_Victimage <- ushomi %>%
+group_by(Victim.Age) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I group the crime cases by Victim race and then record how many
+were solved and how many were not, consequently using those to calculate and 
+record the proportion of the cases solved for each race.
+
+```{r echo=TRUE, warning=FALSE,new_dataset_6}
+homi_by_Victimrace <- ushomi %>%
+group_by(Victim.Race) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+Below I group the crime cases by the Weapons used and then record how many
+were solved and how many were not, how many victims were affected by that weapon
+and consequently using those to calculate and record the proportion of the cases
+solved for each weapon.
+
+```{r echo=TRUE, warning=FALSE, new_dataset_7}
+homi_by_weapon <- ushomi %>%
+group_by(Weapon) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved),
+tot_victims=sum(totalvictims))
+```
+
+Below I group the crime cases by the victim counts and then record how many
+were solved and how many were not, consequently using those to calculate and 
+record the proportion of the cases solved for each group.
+
+```{r echo=TRUE, warning=FALSE,new_dataset_8}
+homi_by_Victimcount <- ushomi %>%
+group_by(Victim.Count) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I group the crime cases by Perpetrator count and then record how many
+were solved and how many were not, consequently using those to calculate and 
+record the proportion of the cases solved for each group.
+
+```{r echo=TRUE, warning=FALSE,new_dataset_9}
+homi_by_Perpcount <- ushomi %>%
+group_by(Perpetrator.Count) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I start making some bivariate plots using some of the newly created 
+grouped sets. 
+
+Below is a plot showing the proportion of cases solved by each year and the 
+number of cases from each year.
+
+```{r echo=FALSE, warning=FALSE, Bivariate_Plot_1}
+p1<-ggplot(aes(x=Year,y=prop_solved),data=homi_by_Year)+
+  geom_point()+geom_line()+
+  scale_x_continuous(breaks=seq(1980,2014,5))
+p2<-ggplot(aes(x=Year,y=n),data=homi_by_Year)+geom_point()+
+  geom_line(color='red')+
+  scale_x_continuous(breaks=seq(1980,2014,5))
+grid.arrange(p1,p2,ncol=2)
+```
+
+```{r echo=FALSE, correlation_1}
+with(homi_by_Year,cor.test(prop_solved,n,method='pearson'))
+```
+
+The plot seems to show that there is an inverse relationship between the solve 
+rate and the number of cases that happen in the year. This makes sense as police 
+resources gradually get more restrained if the number of homicides go up and 
+there is more on the plate. The solve rate from the early-mid 80s are still the 
+highest and there seems to be a declining solve rate since 2010 despite of the
+falling homicide numbers. In order to investigate that further, I run a 
+correlation test between the homicide counts and proportion of homicides solved
+for each year. This turns out to be about 0.034 which basically shows that there
+is almost no correlation between the 2 variables when grouped by age.
+
+Below is a histogram showing the proportion of cases solved by each State.
+
+```{r echo=FALSE,warning=FALSE, Bivariate_Plot_2}
+ggplot(aes(x=State,y=prop_solved),data=homi_by_state)+
+  geom_histogram(stat='identity')+
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+```{r echo=FALSE, correlation_2}
+with(homi_by_state,cor.test(prop_solved,n,method='pearson'))
+```
+
+From the plot above we can say that some states do better than other while some 
+areas like DC have a very low rate of solving cases. Some of the states that've
+very high closure rates are North Dakota, Montana, South Dakota, South Carolina,
+Idaho and Wyoming. All of them have more than 90% closure rates. I belive 
+solve rates are inversely related to the population and population density of 
+the area because the places that are on the lower spectrum here are some of the
+most densely populated while the ones on the higher spectrum have lower 
+population densities. The correlation test between the number of cases a state 
+has and the state's closure rate shows that there is a negative correlation of
+-0.417 between them although it is not very strong.
+
+The plot below shows solve rates by each Agency and gives us a quick overview of 
+the most and least efficient agencies.
+
+```{r echo=FALSE, warning=FALSE, Bivariate_Plot_3}
+p1<-ggplot(aes(x=Agency.Type,y=prop_solved),data=homi_by_Agency)+
+  geom_bar(stat='identity')+
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+p2<-ggplot(aes(x=Agency.Type,y=n),data=homi_by_Agency)+
+  geom_bar(stat='identity')+
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+grid.arrange(p1,p2,ncol=2)
+```
+
+```{r echo=FALSE, correlation_3}
+with(homi_by_Agency,cor.test(prop_solved,n,method='pearson'))
+```
+
+The plot and correlation test above shows that there is some negative 
+correlation between the number of cases under an Agency and the solve rate for 
+that agency. This correlation is not very strong though. Tribal and State police
+have the highest closure rates while the county and municipal police have the 
+lowest.
+
+The plot below shows solve rates by Victim Sex.
+
+```{r echo=FALSE, warning=FALSE,Bivariate_Plot_4}
+ggplot(aes(x=Victim.Sex,y=prop_solved,fill=Victim.Sex),data=homi_by_Victimsex)+
+  geom_histogram(stat='identity')+
+  guides(fill=FALSE)
+```
+
+The barplot above shows that the solve rate is slightly higher for cases where
+the victim is female(about 77%) versus when the victim is male(about 68%) The 
+solve rate is a lot lower(about 34%) when the victim sex hasn't been identified
+and that is not surprising. It obviously makes it a lot harder for the police to
+understand where to look for the perpetrator, motive, people of interest,etc.
+
+The plot tells us if the race of the victim has any effect on the solve rate of 
+the case.
+
+```{r echo=FALSE, warning=FALSE, Bivariate_Plot_5}
+ggplot(aes(x=Victim.Race,y=prop_solved,fill=Victim.Race),
+       data=homi_by_Victimrace)+
+  geom_histogram(stat='identity')+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  guides(fill=FALSE)
+```
+
+From the plot above, it doesn't look like that race of the victim has a big 
+influence on the outcome of the case. The highest solve rate is for Native
+American/Alaskan Native and this is probably because a bunch of these cases
+might be under Tribal Police jurisdiction areas which have low population 
+densities and the highest Solve rate for any agency. Amongst the other races,
+black victim cases have a solve rate of 66% while Asian and White victim cases
+have a solve rate of 70% and 74% respectively.
+
+The plot below shows solve rates by Victim age.
+
+```{r echo=FALSE,warning=FALSE, Bivariate_Plot_6}
+ggplot(aes(x=as.factor(Victim.Age),y=prop_solved),data=homi_by_Victimage)+
+  geom_point()+scale_x_discrete(breaks=seq(0,100,25))
+```
+
+```{r echo=FALSE, correlation_4}
+with(homi_by_Victimage,cor.test(prop_solved,n,method='pearson'))
+```
+
+Newborns and young kids have a high solve rate(85-90%) but then the proportion 
+of solved cases gradually dips as the kids get older reaching lowest levels for 
+victims between their late teens and early 30s. After that, it rises again until 
+about the early 40s and stays pretty constant at around (70-75%) solve rate for 
+victims as old as mid 90s. For victims in their late 90s, the solve rate dips
+suddenly getting to the lowest rate at age 99. The pattern of the solve rate
+looks negatively correlated with how many cases there were for people around 
+that age. For example, earlier we saw that people between their late teens and 
+mid 30s made up majority of the victims and for this group the solve rate was 
+comparatively lower and similarly very low for the surprisngly high number of 
+cases for people aged 99. I ran a correlation test to check this assumption and
+there indeed was some negative correlation but it wasn't strong(-0.3) probably 
+because of the pretty constant solve rate for victims between their 40s and mid
+90s.
+
+The plot tells us if the choice of weapon has any effect on the solve rate of 
+the case. 
+
+```{r echo=FALSE,warning=FALSE, Bivariate_Plot_7}
+ggplot(aes(x=Weapon,y=prop_solved,fill=Weapon),data=homi_by_weapon)+
+  geom_bar(stat='identity')+guides(fill=FALSE)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+The weapon based solve rate shows us that if the victim died because of drugs, 
+falling, drowning or poison there were higher chances of solving the case. 
+If the crime was committed through an unknown weapon, strangulation, fire or 
+gun/firearm the solve rate was comparatively lower. In case of strangulation and
+an unidentified weapon the closure rate was considerably lower. 
+
+The plot tells us if Victim count influenced solve rates in any way.
+
+```{r echo=FALSE, warning=FALSE, Bivariate_Plot_8}
+ggplot(aes(x=Victim.Count,y=prop_solved),data=homi_by_Victimcount)+
+  geom_bar(stat='identity')+
+  scale_x_continuous(breaks=seq(0,10,1))
+```
+
+```{r echo=FALSE, correlation_5}
+with(homi_by_Victimcount,cor.test(Victim.Count,prop_solved,method='pearson'))
+```
+
+There does seem to be an increasing trend between the solve rate and the number 
+of victims in the case. I ran a correlation test between the variables and it
+turned out to be 0.80 which means there is indeed a fairly strong correlation
+between the number of victims and the solve rate of the case. This could be also
+due to the fact that mass shooting or bombing tragedies have more resources
+allotted and prioritized.
+
+The graph below is going to be between proportion of cases solved versus the 
+number of perpetrators involved.
+
+```{r echo=FALSE, warning=FALSE, Bivariate_Plot_9}
+ggplot(aes(x=Perpetrator.Count,y=prop_solved),data=homi_by_Perpcount)+
+  geom_bar(stat='identity')+
+  scale_x_continuous(breaks=seq(0,10,1))
+```
+
+```{r echo=FALSE, correlation_6}
+with(homi_by_Perpcount,cor.test(Perpetrator.Count,prop_solved,method='pearson'))
+```
+
+The bar plot and the correlation test above certainly show that if
+the number of perpetrators in addition to the main criminal is greater than 0, 
+then the solve rate is much higher and almost 100% for bigger groups.
+But this relation could be the aftermath of the outcome of the case. 
+For example, the police would most likely know about the involvement of 
+multiple people only if the case has already been cracked and solved so 
+there does seem to be an apparent effect on solve rate. Or it could be the fact 
+that when multiple people are involved in a crime, there are more loose ends 
+and the police can use this knowledge to have 1 person rat out the rest,etc. 
+
+Apart from the bivariate plots above relating the main feature variable with
+other variables I will also plot some plots to relate 2 non-feature variables.
+Below is the scatterplot between the victim and perpetrator age. I remove 
+perpetrator ages of 0 and victim ages of 99 because both of these are 
+unrealistically high and most likely inaccurately reported.
+
+```{r echo=FALSE,warning=FALSE, Bivariate_Plot_10}
+ggplot(aes(x=Perpetrator.Age,y=Victim.Age),
+       data=subset(ushomi,(!is.na(Victim.Age) & Victim.Age<99 & 
+                             !is.na(Perpetrator.Age) & Perpetrator.Age>0)))+
+  geom_point(alpha=0.01,position='jitter')+
+  geom_smooth(method='lm')+
+  scale_x_discrete(breaks=seq(0,100,10))+
+  scale_y_discrete(breaks=seq(0,100,10))
+```
+
+
+```{r echo=FALSE, warning=FALSE, correlation_7}
+with(subset(ushomi,(!is.na(Victim.Age) & as.numeric(Victim.Age)<99 & 
+                    !is.na(Perpetrator.Age) & as.numeric(Perpetrator.Age)>0)),
+            cor.test(as.numeric(Perpetrator.Age),as.numeric(Victim.Age),
+                     method='pearson'))
+```
+
+There seems to be slight positive linear relationship between the 2 variables.
+The correlation test I ran yields a correlation coeeficient of 0.38 which means
+that there is a some positive correlation there.
+
+Below is the heatmap between showing the total victim count for each weapon.
+
+```{r echo=FALSE, warning=FALSE, Bivariate_Plot_11}
+ggplot(aes(x=totalvictims,y=Weapon),data=ushomi)+
+  geom_bin2d(bins=15)+scale_x_continuous(breaks=seq(0,12,1))+
+   scale_fill_gradientn(colors=colorRampPalette(c('#fef0d9','#fdcc8a','#fc8d59',
+  '#e34a33','#b30000'))(132))+
+  stat_bin2d(geom='text',size=2.5,aes(label=round(..count..)),binwidth=.01)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  ggtitle("Frequency by weapon and total victim count")
+```
+
+```{r echo=FALSE, weapons_and_victim_count_summary}
+by(ushomi$totalvictims,ushomi$Weapon,summary)
+```
+
+The plot above shows us that the highest victim counts are in cases involving
+explosives, as one would intuitively expect. Gun/Firearm has most cases of a 
+mid-sized casualty with total victim counts of 3-10. Most of these weapon 
+classes have been used to kill 1-3 people on multiple cases but fire and 
+firearms are the most devastating and prolific weapons aside from explosions
+when it comes to mass casualty.
+
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. How did the feature(s) of interest vary with other features in \
+the dataset?
+
+The proportion of homicides that were solved definitely varied by Year,State,
+Agency, Victim age, Victim Sex, marginally by Victim Race, Weapon and quite a 
+lot by Victim count and Perpetrator count. For example, if the Victim sex 
+couldn't be identified the solve rate was very low, about 50% for victims with 
+unknown race. If strangulation was the weapon or if the weapon was unknown, 
+the solve rate was very low as well. States with higher population density had 
+lower solve rates compared to states with lower population and less dense 
+dispursion. On the other hand, cases handled by Tribal or State police, cases 
+with higher victim or perpetrator counts, cases involving drug, fall, 
+drowning or poisoning had higher solve rates.
+
+### Did you observe any interesting relationships between the other features \
+(not the main feature(s) of interest)?
+
+Yes, there was a slight linear relationship between the victim and perpetrator
+ages with correlation around 0.38. I also found out that fire, gun/firearm and 
+explosions are the weapons most commonly used in mass casualty cases where total
+victim counts are greater than 3.
+
+### What was the strongest relationship you found?
+
+The strongest relationship I found was between Victim.Count(victims apart from 
+the main victim) and prop_solved(Solve/Closure rate). The correlation between 
+the 2 variables was pretty strong at 0.80 .It would make sense that cases with 
+higher victim counts are prioritized and allotted more resources.
+
+# Multivariate Plots Section
+
+I first group the homicide data by both State and Year and record the closure
+rate for every state by each year.
+
+```{r echo=FALSE, warning=FALSE, new_dataset_10}
+homi_by_stateandYear <- ushomi %>%
+group_by(State,Year) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I make a scatter and line plot of the solve rate by each year for every 
+state by faceting.
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plot_1}
+ggplot(aes(x=Year,y=prop_solved),data=homi_by_stateandYear)+
+  geom_point(aes(color=State))+geom_line()+
+  facet_wrap(~State)
+```
+
+From the graph above, I can see that it is not always the states which are less
+dense do better and states that are more dense have a low solve rate. A lot of 
+states like Vermont, South Dakota, Alaska and Alabama have had their fair share
+of ups and downs when it comes to the solve rate whereas states like Texas and 
+Oklahoma have been pretty consistent over the years. We can also see densely 
+populated areas like DC has had very low lows and very high highs over the 
+years. States like California and Illinois have had a decline in solve rate over
+the years with Illinois especially going down pretty steeply whereas states like
+Washington and New Mexico have had an upward trend in solve rates over the 
+years.
+
+Below, I make a scatter plot between the victim and pereptrator ages with some 
+of the most frequent victim relationships categorizing them.
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plot_2}
+select=c('Acquaintance','Stranger','Wife','Friend','Girlfriend','Son','Family',
+         'Husband','Daughter','Boyfriend')
+ggplot(aes(x=Perpetrator.Age,y=Victim.Age,color=Relationship),
+       data=subset(ushomi,(!is.na(Victim.Age) & Victim.Age<99 & 
+                             !is.na(Perpetrator.Age) & Perpetrator.Age>0 &
+                             (Relationship %in% select))))+
+  geom_point(alpha=0.1,position='jitter')+
+  scale_x_discrete(breaks=seq(0,100,10))+
+  scale_y_discrete(breaks=seq(0,100,10))+
+  scale_color_manual(values=c('#a6cee3','#1f78b4','#b2df8a','#33a02c',
+                              '#fb9a99','#e31a1c','#fdbf6f','#ff7f00',
+                              '#cab2d6','#6a3d9a'))+
+  guides(color = guide_legend(override.aes = list(alpha=1,size=2)))
+```
+
+When the victim is a kid under 12 or 13, they are usually sons or daughters 
+which means the perpetrator is normally one of the parents. When the victim is 
+either a stranger or an acquaintance between their teens and mid 70s, their 
+perpetrator is normally under his or her late 30s. Friends, girlfriends and 
+wives are victims almost along a linear pattern which means it happens across 
+all ages and their perpetrators are usually about the same age. We also see that
+majority of the wives are killed by their husbands between the the ages of early
+60s and mid 80s. I can also make out that older victims who are usually family 
+are killed by members who are between their teens and mid 30s.
+
+I first group the homicide data by both Sex and Year and then record the closure
+rate for the grouped victims over the years.
+
+```{r echo=FALSE, warning=FALSE, new_dataset_11}
+homi_by_sexandyear <- ushomi %>%
+group_by(Victim.Sex,Year) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I make a scatter and line plot of the solve rate for each year segregated
+by male or female victims.
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plot_3}
+ggplot(aes(x=Year,y=prop_solved,color=Victim.Sex),
+       data=subset(homi_by_sexandyear,Victim.Sex %in% c('Male','Female')))+
+  geom_point()+geom_line()
+```
+
+From the graph above we can see that although cases with both male or female
+victims started at around 73% solve rate in 1980, over time the solve rate for
+cases with male victims has gradually gone down to about 65% in 2014 while the 
+solve rate for cases with female victims has gone up gradually over the years 
+to about 85%. So Victim sex does seem to be a factor in solving a case and that
+has been more pronounced over the years. 
+
+I first group the homicide data by both Race and Year and then record the 
+closure rate for all the races over the years.
+
+```{r echo=FALSE, warning=FALSE, new_dataset_12}
+homi_by_raceandyear <- ushomi %>%
+group_by(Victim.Race,Year) %>%
+summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+unsolved=length(Record.ID[Crime.Solved=='No']), 
+prop_solved=solved/(solved+unsolved))
+```
+
+Below I make a scatter and line plot of the solve rate for each year grouped by
+victim race.
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plot_4}
+ggplot(aes(x=Year,y=prop_solved,color=Victim.Race),
+       data=subset(homi_by_raceandyear,Victim.Race !='Unknown'))+
+  geom_point()+geom_line()
+```
+
+At closer look, when race is divided by years it definietly looks like that the 
+victim race is also a factor influencing the closure of a case. While all the 
+races started round the same solve rate of 70-75%, over the years the solve rate 
+for black victim cases has steadily gone down from 75% in 1980 to about 60% in 
+2014 while the solve rate for white victim cases has had an upward trend to 
+about 80% in 2014. Native American/Alaskan native victims usually have a higher 
+solve rate than the other races like we found out earlier and this again could 
+be due to less densely populated areas, involvement of Tribal police, etc but 
+they have had their share of volatility from year to year as well reaching as 
+low as 70% and as high as 90%. Asian/Pacific Islander victims have also had 
+very varying solve rates over the years, going as low as 63% and as high as 80%.
+
+I first group the homicide data by both Race and Year, them merge it with the 
+another group created just for weapons. I do this so that I am able to calculate
+the proportion of victims affected by criminals from every race based on their 
+weapon choice.
+
+```{r echo=FALSE, warning=FALSE,new_dataset_13}
+homi_by_raceandweapon <- ushomi %>%
+group_by(Perpetrator.Race,Weapon) %>%
+summarise(n1=n(),solved1=length(Record.ID[Crime.Solved=='Yes']),
+unsolved1=length(Record.ID[Crime.Solved=='No']), 
+prop_solved1=solved1/(solved1+unsolved1),
+victims=sum(totalvictims))
+homi_raceweaponprop<-merge(homi_by_raceandweapon,homi_by_weapon,by.x ="Weapon",
+                           by.y="Weapon")
+homi_raceweaponuse<-homi_raceweaponprop %>%
+  group_by(Weapon,Perpetrator.Race)%>%
+  summarise(prop_victims=round((victims/tot_victims),4))
+```
+
+Below is a heat map adding more detail to our weapon vs victim count plot from
+earlier. In the following plot, I use the homicide grouped by perpetrator race,
+weapon used and then fill them with varying colors distributed on the basis of 
+the proportion of all victims killed by that weapon.
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plot_5}
+ggplot(aes(x=Perpetrator.Race,y=Weapon,fill=prop_victims),
+       data=homi_raceweaponuse)+
+  geom_tile()+ 
+  scale_fill_gradientn(colors=colorRampPalette(c('#fef0d9','#fdcc8a','#fc8d59',
+  '#e34a33','#b30000'))(60))+
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+From the above plot, we find the proportion of victims affected by criminals of 
+all race based on the choice of weapon. We earlier found that Gun/Firearms, 
+Knives and Blunt objects are weapons with most victim counts so looking at it
+more closely, it appears that about 34% of all victims from gun/firearm usage
+are at the hands of black criminals while 33% of them are killed by white 
+perpetrators, 39% and 37% of all knife based murders are done by white and black
+criminals respectively. In case of blunt weapons, 43% of all murders are carried
+out by criminals who are white. So, it looks like white criminals kill their 
+victims with blunt objects a lot more than perpetrators from other races.
+It is also interesting to see that when the victim dies of falling 37% of the 
+victim counts have been accumulated by black perpetrators. About 85% of all 
+victims who died because of an explosive were at the hands of a white criminal. 
+We also see that 45% of all victims where strangulation or an unknown weapon was
+used have an uknown perpetrator race meaning that they were most likely 
+unsolved. It is pleasantly surprising to see that no Native American/Alaskan 
+Native has ever used explosives in a homicide.
+
+I create a dataframe grouping the homicide cases by Agency Type and Year and 
+then record the solve rate for each Agency over the years.
+
+```{r echo=FALSE, warning=FALSE, new_dataset_14}
+homi_by_agencyandyear <- ushomi %>%
+  group_by(Agency.Type,Year) %>%
+  summarise(n=n(),solved=length(Record.ID[Crime.Solved=='Yes']),
+  unsolved=length(Record.ID[Crime.Solved=='No']), 
+  prop_solved=solved/(solved+unsolved))
+```
+
+In the following plot, I find the solve rate of the agencies over the years
+
+```{r echo=FALSE, warning=FALSE, Multivariate_Plot_6}
+ggplot(aes(x=Year,y=prop_solved,color=Agency.Type),
+       data=homi_by_agencyandyear)+
+  geom_point()+geom_line()+scale_x_continuous(breaks=seq(1980,2014,2))+
+  geom_line(stat='summary',fun.y=mean,linetype=2)+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  facet_wrap(~Agency.Type,ncol=2)
+```
+
+The above plot shows us the solve rates over the years for all the agencies.
+Tribal police and regional police have had more varied results over the years 
+and that is probably because they are the ones that get the least amount of 
+cases so proportion for a year could be skewed when working with only a few 
+cases. The closure rate for cases under the State Police seems to have improved
+steadily over the years while special and municipal police have experienced 
+a decreasing trend in the proportion of cases that are solved. The result 
+efficiency for the sheriff's department and county police has stayed about the 
+same over the years.
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the \
+investigation. Were there features that strengthened each other in terms of \
+looking at your feature(s) of interest?
+
+From the above multivariate plots, I found out that the solve rate for cases 
+with female victims has gone up while those with male victims has gone down over
+time. It also appears that cases with black victims have had declining rates of
+closure since 1980 so these are certainly 2 factors affecting the chances of a 
+case being solved. Most states have had pretty variable solve rates over time, 
+sometimes, going up and down by big margins in consecutive years. There are some
+states like Illinois and California that have declined in closure efficiency 
+over the years while others like Texas and Washington have stayed constant and
+improved respectively. Solve rates of state police have improved over the years
+while that of the special and municipal police have deteriorated.
+
+### Were there any interesting or surprising interactions between features?
+
+The victim and perpetrator age scatterplot enhanced by relationships showed some
+interesting interactions. For example, When the victim is a child under 12 or 
+13, they are usually sons or daughters which means the perpetrator is normally 
+one of the parents. When the victim is either a stranger or an acquaintance 
+between their teens and mid 70s, their perpetrator is normally under his or 
+her late 30s. Friends, girlfriends and wives are victims almost along a linear 
+pattern which means it happens across all ages and their perpetrators are 
+usually about the same age. We also see that majority of the wives are killed by
+their husbands between the the ages of early 60s and mid 80s. I can also make 
+out that older victims who are usually family are killed by members who are 
+between their teens and mid 30s. Another interesting interaction was from the
+heatmap showing that no native american/alaskan native has ever used explosives
+in order to kill people and it was surprising to see that most explosive based
+homicides were committed by white criminals.
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, warning=FALSE, Plot_One}
+ggplot(aes(x=Perpetrator.Age,y=Victim.Age,color=Relationship),
+       data=subset(ushomi,(!is.na(Victim.Age) & Victim.Age<99 & 
+                             !is.na(Perpetrator.Age) & Perpetrator.Age>0 &
+                             (Relationship %in% select))))+
+  geom_point(alpha=0.1,position='jitter')+
+  scale_x_discrete(breaks=seq(0,100,10))+
+  scale_y_discrete(breaks=seq(0,100,10))+
+  scale_color_manual(values=c('#a6cee3','#1f78b4','#b2df8a','#33a02c','#fb9a99',
+    '#e31a1c','#fdbf6f','#ff7f00','#cab2d6','#6a3d9a'))+
+  guides(color=guide_legend(title='Relationship of victim to perpetrator',
+                            override.aes = list(alpha=1,size=2)))+
+  xlab('Perpetrator Age')+ylab('Victim Age')+
+  ggtitle('Victim and Perpetrator age by Relationship')
+```
+
+### Description One
+
+I included this plot because it gave me insight into interactions between the 
+victim age, perpetrator age and relationhip variables. 
+When the victim is a child under 12 or 13, they are usually sons or daughters 
+which means the perpetrator is normally one of the parents. When the victim is 
+either a stranger or an acquaintance between their teens and mid 70s, their 
+perpetrator is normally under his or her late 30s. Friends, girlfriends and 
+wives are victims almost along a linear pattern which means it happens across 
+all ages and their perpetrators are usually about the same age. We also see that
+majority of the wives are killed by their husbands between the the ages of early
+60s and mid 80s. I can also make out that older victims who are usually family 
+are killed by members who are between their teens and mid 30s. It also appears 
+that some older husbands(60-80s) are killed by comparatively younger wives
+(50-60s).
+
+### Plot Two
+```{r echo=FALSE, warning=FALSE, Plot_Two}
+ggplot(aes(x=Year,y=prop_solved,color=Victim.Sex),
+       data=subset(homi_by_sexandyear,Victim.Sex %in% c('Male','Female')))+
+  geom_point()+geom_line()+scale_x_continuous(breaks=seq(1980,2014,2))+
+  xlab('Year')+ylab('Proportion of cases solved')+
+  ggtitle('Solve rates by Victim Sex over the years')+
+  guides(color=guide_legend(title='Victim Sex'))+
+  theme(axis.text.x = element_text(angle=90, hjust=1))
+```
+
+### Description Two
+
+I chose this plot because it shows the growing difference in solve rate 
+between cases with male and female victims. Both genders started at about the
+same closure rate but over time the difference has amounted to nearly 20% in the
+proportion of cases being solved. Male victims had a solve rate of about 65% in
+2014 while female victims now have solve rates of around 85%. That trend and 
+those numbers certainly show that victim sex has influence on the outcome of 
+homicide case.
+
+### Plot Three
+```{r echo=FALSE, warning=FALSE, Plot_Three}
+ggplot(aes(x=Perpetrator.Race,y=Weapon,fill=prop_victims),
+       data=homi_raceweaponuse)+
+  geom_tile()+ 
+  scale_fill_gradientn(colors=colorRampPalette(c('#fef0d9','#fdcc8a','#fc8d59',
+  '#e34a33','#b30000'))(60))+
+  theme(axis.text.x = element_text(angle=90, hjust=1))+
+  xlab('Perpetrator Race')+ylab('Weapon used')+
+  labs(fill='Proportion of victims from that weapon')+
+  ggtitle('Proportion of all victims killed by Weapon and Perpetrator Race')
+```
+
+### Description Three
+
+I chose this plot because we find the proportion of victims affected by 
+criminals of all races based on the choice of weapon. It appears that about 34%
+of all victims from gun/firearm usage are at the hands of black criminals 
+while 33% of them are killed by white perpetrators, 39% and 37% of all knife 
+based murders are done by white and black criminals respectively. 
+In case of blunt weapons, 43% of all murders are carried out by criminals who 
+are white. So, it looks like white criminals kill their victims with blunt 
+objects a lot more than perpetrators from other races. It is also interesting to
+see that when the victim dies of falling, 37% of the victim counts have been 
+accumulated by black perpetrators. About 85% of all victims who died because of 
+an explosive were at the hands of a white criminal. We also see that 45% of all 
+victims where strangulation or an unknown weapon was used have an uknown 
+perpetrator race meaning that they were most likely unsolved. It is pleasantly 
+surprising to see that no Native American/Alaskan Native has ever used 
+explosives in a homicide. For Asian/Pacific Islanders, the highest proportion
+towards victim count across different weapons was surprisingly for cases with 
+drowning. This interaction between weapon use and perpetrator race is useful 
+because it allows allows one to build part of a criminal profile based on the 
+weapon used, victim race, victim age, demographic information of the area 
+for homicide cases where the perpetrator is unknown.
+
+------
+
+# Reflection
+
+While doing exploratory data analysis on this dataset, the few challenges that I
+faced were the existence of so many variables, and some inaccurate or wrongly 
+reported age or relationship information. I cleaned all the entries I could but 
+for some, I had nothing to go off on. 
+I didn't need to change the table formatting from wide to long or vice-versa for 
+any of my explorations so that is something that went smoothly. The insight I
+got through my visualizations gives relationship , victim and perpetrator age 
+based interactions; Victim sex, Race and State based differences in the outcome;
+and fatalities, perpetrator race and weapon choice based interactions. For 
+example, we now know that 45-50% of all murders with unknown weapons and 
+strangulations have been unsolved or that white criminals use blunt objects,
+fire,poison, drugs and explosives to kill their victims a lot more than 
+perpetrators from other races. Using historical weapon use and proportional
+victim count findings,looking at the age, sex and race of the victim, we can 
+possibly narrow down and make educated estimates while building a perpetrator 
+profile. Finding other useful interactions such as victim and perpetrator race, 
+adding geographical and demographical information about the crime location, 
+I believe one could build reliable criminal profiles for homicide cases where 
+the perpetrator is unknown and/or build a model predicting closure rate of a 
+case based on the available information. These would also throw light on new 
+insightsabout closure rates in densely populated cities versus less sensely 
+populated rural/suburban areas.
